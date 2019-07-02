@@ -193,6 +193,7 @@ public class Patch {
                     break;
                 case MODIFY_STATEMENT:
                     editSubType = rng.nextInt(2);
+                    editSubType = 2;
                     // will also need a random choice between different modifications...
                     // see https://github.com/gintool/gin/issues/13#issuecomment-342489660
                     switch (editSubType) {
@@ -202,11 +203,11 @@ public class Patch {
                     case (1): // UnaryOperator
                         edit = new UnaryOperatorReplacement(sourceFile, rng);
                         break;
-    /*
+    
                     case (2): // ReorderLogicalExpression
                         edit = new ReorderLogicalExpression(sourceFile, rng); // not yet ready
                         break;
-    */
+    
                     }
                     
                     break;

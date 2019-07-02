@@ -21,7 +21,7 @@ import org.pmw.tinylog.Logger;
  */
 public class LocalSearch {
 
-    private static final int WARMUP_REPS = 10;
+    private static final int WARMUP_REPS = 2;
 
     @Argument(alias = "f", description = "Required: Source filename", required=true)
     protected File filename = null;
@@ -34,7 +34,7 @@ public class LocalSearch {
     protected Integer seed = 123;
 
     @Argument(alias = "n", description = "Number of steps")
-    protected Integer numSteps = 100;
+    protected Integer numSteps = 10;
 
     @Argument(alias = "d", description = "Top directory")
     protected File packageDir;
@@ -63,7 +63,8 @@ public class LocalSearch {
 
         Args.parseOrExit(this, args);
 
-        this.sourceFile = new SourceFileLine(this.filename, this.methodSignature);
+        //this.sourceFile = new SourceFileLine(this.filename, this.methodSignature);
+        this.sourceFile = new SourceFileTree(this.filename, this.methodSignature);
         this.rng = new Random(seed);
         if (this.packageDir == null) {
             this.packageDir = this.filename.getParentFile().getAbsoluteFile();
@@ -171,7 +172,8 @@ public class LocalSearch {
         if (neighbour.size() > 0 && rng.nextFloat() > 0.5) {
             neighbour.remove(rng.nextInt(neighbour.size()));
         } else {
-            neighbour.addRandomEdit(rng, Collections.singletonList(Edit.EditType.LINE));
+           // neighbour.addRandomEdit(rng, Collections.singletonList(Edit.EditType.LINE));
+            neighbour.addRandomEdit(rng, Collections.singletonList(Edit.EditType.MODIFY_STATEMENT));
         }
         
         return neighbour;

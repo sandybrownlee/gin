@@ -18,6 +18,8 @@ import com.github.javaparser.ast.DataKey;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.BinaryExpr.Operator;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 
@@ -575,6 +577,176 @@ public class SourceFileTree extends SourceFile {
     public List<Integer> getAllStatementIDs() {
         return Collections.unmodifiableList(allStatementIDs);
     }
+        
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+       
+	public List<List<Integer>> getShortCircuitingNodeIDs() {
+		List<List<Integer>> rval = new ArrayList<>();
+		for (Node n : allNodes.values()) {	
+			if (n instanceof com.github.javaparser.ast.stmt.IfStmt || n instanceof com.github.javaparser.ast.stmt.WhileStmt) {				
+				Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+				List<Integer> operator_nodes = new ArrayList<>();
+				operator_nodes = getOperatorChildren(condition_node, operator_nodes);				
+				// Only record if there are at least two operators in the condition
+				if(operator_nodes.size()>1) {
+					rval.add(operator_nodes);
+				}
+			}                
+		}
+		return rval;
+	}	
+	
+	public List<Integer> getOperatorChildren(Node input_node, List<Integer> operator_nodes) {
+		// Recursive traversal
+		for(Node child: input_node.getChildNodes()) {    		
+			getOperatorChildren(child, operator_nodes);
+		}	
+		// 	Record the ID if it corresponds to an AND or OR operator
+		if(input_node instanceof com.github.javaparser.ast.expr.BinaryExpr) {    
+			BinaryExpr a = (BinaryExpr)input_node;
+			if ((a.getOperator() == Operator.AND) || (a.getOperator() == Operator.OR)) {
+				operator_nodes.add(input_node.getData(NODEKEY_ID));
+			}
+		}
+		return operator_nodes;
+	}
+	
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//Get leaves from operators	
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	///// Short circuiting via leaf ids
+	public List<List<Integer>> getShortCircuitingLeafIDs() {
+		List<List<Integer>> rval = new ArrayList<>();
+		for (Node n : allNodes.values()) {	
+			if (n instanceof com.github.javaparser.ast.stmt.IfStmt || n instanceof com.github.javaparser.ast.stmt.WhileStmt) {				
+				Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+				List<Integer> operator_nodes = new ArrayList<>();
+				operator_nodes = getOperatorChildrenLeaves(condition_node, operator_nodes);
+				// Only record if there are at least two operators in the condition
+				if(operator_nodes.size()>2) {
+					rval.add(operator_nodes);
+				}
+			}                
+		}
+		return rval;
+	}
+	
+	public List<Integer> getOperatorChildrenLeaves(Node input_node, List<Integer> operator_nodes) {
+		// Recursive traversal
+		for(Node child: input_node.getChildNodes()) {    		
+			getOperatorChildrenLeaves(child, operator_nodes);
+		}	
+		// 	Record the ID if it corresponds to an AND or OR operator
+		if(input_node instanceof com.github.javaparser.ast.expr.BinaryExpr) {    
+			BinaryExpr a = (BinaryExpr)input_node;
+			if ((a.getOperator() == Operator.AND) || (a.getOperator() == Operator.OR)) {
+				for(Node child: input_node.getChildNodes()) {    		
+					operator_nodes.add(child.getData(NODEKEY_ID));
+				}
+			}
+		}
+		return operator_nodes;
+	}	
+	
+	///// Short circuiting via leaf ids
+	public List<List<Integer>> getShortCircuitingLeafIDsPreserveOR() {
+		List<List<Integer>> rval = new ArrayList<>();
+		for (Node n : allNodes.values()) {	
+			if (n instanceof com.github.javaparser.ast.stmt.IfStmt || n instanceof com.github.javaparser.ast.stmt.WhileStmt) {				
+				Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+				List<Integer> operator_nodes = new ArrayList<>();
+				operator_nodes = getOperatorChildrenLeavesFromANDS(condition_node, operator_nodes);
+				// Only record if there are at least two operators in the condition
+				if(operator_nodes.size()>1) {
+					rval.add(operator_nodes);
+				}
+			}                
+		}
+		return rval;
+	}
+	
+	public List<Integer> getOperatorChildrenLeavesFromANDS(Node input_node, List<Integer> operator_nodes) {
+		// Recursive traversal
+		for(Node child: input_node.getChildNodes()) {    		
+			getOperatorChildrenLeavesFromANDS(child, operator_nodes);
+		}	
+		// 	Record the IDs of the children if it corresponds to an AND operator
+		if(input_node instanceof com.github.javaparser.ast.expr.BinaryExpr) {    
+			BinaryExpr a = (BinaryExpr)input_node;
+			if ((a.getOperator() == Operator.AND)) {
+				for(Node child: input_node.getChildNodes()) {    		
+					operator_nodes.add(child.getData(NODEKEY_ID));
+				}
+			}
+			// Record the node if it corresponds to an OR operator
+			else if ((a.getOperator() == Operator.OR)) {				   		
+					operator_nodes.add(a.getData(NODEKEY_ID));				
+			}
+		}
+		return operator_nodes;
+	}
+	
+	
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Get matching leaves from matching operators	
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///// Short circuiting via leaf ids
+	public List<List<Integer>> getShortCircuitingLeafIDsByType() {
+		List<List<Integer>> rval = new ArrayList<>();
+		for (Node n : allNodes.values()) {	
+			if (n instanceof com.github.javaparser.ast.stmt.IfStmt || n instanceof com.github.javaparser.ast.stmt.WhileStmt) {				
+				Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+				List<Integer> and_operator_nodes = new ArrayList<>();
+				List<Integer> or_operator_nodes = new ArrayList<>();
+				List<List<Integer>> operator_nodes = new ArrayList<>();
+				operator_nodes.add(and_operator_nodes);
+				operator_nodes.add(or_operator_nodes);
+				operator_nodes = getOperatorChildrenLeavesByType(condition_node, operator_nodes);
+				// Only record if there are at least two operators in the condition
+				if(operator_nodes.get(0).size()>1) {
+					rval.add(operator_nodes.get(0));
+				}
+				if(operator_nodes.get(1).size()>1) {
+					rval.add(operator_nodes.get(1));
+				}
+			}                
+		}
+		return rval;
+	}
+	
+	
+	public List<List<Integer>> getOperatorChildrenLeavesByType(Node input_node, List<List<Integer>> operator_nodes) {
+		// Recursive traversal
+		for(Node child: input_node.getChildNodes()) {    		
+			getOperatorChildrenLeavesByType(child, operator_nodes);
+		}	
+		// 	Record the ID if it corresponds to an AND or OR operator
+		if(input_node instanceof com.github.javaparser.ast.expr.BinaryExpr) {    
+			BinaryExpr a = (BinaryExpr)input_node;
+			if (a.getOperator() == Operator.AND) {
+				//operator_nodes.add(input_node.getData(NODEKEY_ID));
+				for(Node child: input_node.getChildNodes()) {    		
+					operator_nodes.get(0).add(child.getData(NODEKEY_ID));
+				}
+			}
+			if (a.getOperator() == Operator.OR) {
+				//operator_nodes.add(input_node.getData(NODEKEY_ID));
+				for(Node child: input_node.getChildNodes()) {    		
+					operator_nodes.get(1).add(child.getData(NODEKEY_ID));
+				}
+			}
+		}
+		return operator_nodes;
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+    
     
     /**
      * @return a list of indices into the list of blocks for this source file

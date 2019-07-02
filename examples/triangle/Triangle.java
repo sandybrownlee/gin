@@ -8,7 +8,31 @@ public class Triangle {
     public static int classifyTriangle(int a, int b, int c) {
 
         delay();
-
+        
+        if(delayBoolean() && delayBoolean() && false)
+        {
+        	System.out.println("Shouldn't get here");
+        }
+        
+        if(delayBoolean() && (delayBoolean() && false))
+        {
+        	System.out.println("Shouldn't get here either");
+        }
+        
+        
+        if(true && (true || false))
+        {
+        	
+        }
+        
+        if(true && true || false)
+        {
+        	
+        }
+        
+        
+        
+        
         // Sort the sides so that a <= b <= c
         if (a > b) {
             int tmp = a;
@@ -47,5 +71,17 @@ public class Triangle {
 
         }
     }
+    
+    private static boolean delayBoolean() {
+        try {
+            Thread.sleep(30);
+        } catch (InterruptedException e) {
+
+        }
+        
+        return true;
+    }
+    
+    
 
 }
