@@ -2,8 +2,8 @@ package gin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +20,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.BinaryExpr.Operator;
+import com.github.javaparser.ast.nodeTypes.NodeWithCondition;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 
@@ -392,6 +393,22 @@ public class SourceFileTree extends SourceFile {
         }
     }
     
+    
+    public SourceFileTree replaceNodes(Map<Integer,Node> replacements) {
+//        if (!this.allNodes.containsKey(ID)) {
+//            return this;
+//        } else {
+//            Node replacementNodeCopy = replacement.clone();
+//            //replacementNodeCopy.setData(NODEKEY_ID, ID);  // don't do this. it then makes edits to the replaced node possible. Issue https://github.com/drdrwhite/ginfork/issues/46
+//            replacementNodeCopy.setData(NODEKEY_ID, null);
+//            
+//            Map<Integer, Node> nodesToReplace = Collections.singletonMap(ID, replacementNodeCopy);
+//            SourceFileTree sf = new SourceFileTree(this, nodesToReplace);
+//            
+            return this;//sf;
+//        }
+    }
+    
     /**
      * currently no checking to ensure the ID is actually for a Statement node
      * so possibly will throw a ClassCastException
@@ -587,9 +604,11 @@ public class SourceFileTree extends SourceFile {
 		switch(node_type) {		
 		
 			case "matchingleaves":				
-				for (Node n : allNodes.values()) {	
+				for (Node n : allNodes.values()) {
+					//if NodeWithCondition.class.isAssignableFrom(n.getClass())
 					if (n instanceof com.github.javaparser.ast.stmt.IfStmt || n instanceof com.github.javaparser.ast.stmt.WhileStmt) {				
-						Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+						//Node condition_node = ((n instanceof com.github.javaparser.ast.stmt.IfStmt) ? ((com.github.javaparser.ast.stmt.IfStmt) n).getCondition() : ((com.github.javaparser.ast.stmt.WhileStmt) n).getCondition());
+						Node condition_node = ((NodeWithCondition<?>)n).getCondition();
 						List<Integer> and_operator_nodes = new ArrayList<>();
 						List<Integer> or_operator_nodes = new ArrayList<>();
 						List<List<Integer>> operator_nodes = new ArrayList<>();
