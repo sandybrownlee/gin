@@ -12,7 +12,7 @@ import com.github.javaparser.ast.expr.Expression;
 import gin.SourceFile;
 import gin.SourceFileTree;
 
-import gin.misc.treeExplorer;
+import gin.misc.TreeExplorer;
 
 /**
  * exploit short-circuiting behaviour in logical expressions by swapping order of nodes within them
@@ -35,7 +35,7 @@ public class ReorderLogicalExpression extends ModifyNodeEdit {
      //        (keeps this detail out of Patch class)
     public ReorderLogicalExpression(SourceFile sourceFile, Random rng) throws NoApplicableNodesException {
         SourceFileTree sf = (SourceFileTree)sourceFile;  
-        treeExplorer tree_exp = new treeExplorer();               
+        TreeExplorer tree_exp = new TreeExplorer();               
                        
         List<Integer> nodes = new ArrayList<>();   
                 
