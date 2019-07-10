@@ -12,6 +12,8 @@ import com.github.javaparser.ast.expr.Expression;
 import gin.SourceFile;
 import gin.SourceFileTree;
 
+import gin.misc.treeExplorer;
+
 /**
  * exploit short-circuiting behaviour in logical expressions by swapping order of nodes within them
  * currently just swaps within binary statements.
@@ -32,28 +34,46 @@ public class ReorderLogicalExpression extends ModifyNodeEdit {
      // @param r is needed to choose a node and a suitable replacement 
      //        (keeps this detail out of Patch class)
     public ReorderLogicalExpression(SourceFile sourceFile, Random rng) throws NoApplicableNodesException {
-        SourceFileTree sf = (SourceFileTree)sourceFile;
+        SourceFileTree sf = (SourceFileTree)sourceFile;  
+        treeExplorer tree_exp = new treeExplorer();               
                        
-        List<Integer> nodes = new ArrayList<>();         
-        
-        int expression = 6;
+        List<Integer> nodes = new ArrayList<>();   
+                
+        int expression = 5;
+        System.out.println("Short Circuiting Version: " + expression);
         switch(expression) {
-        case 1:
-        	// A list of all AND OR operator nodes
-            nodes = getOperatorNodes(sf, rng);       	
-        case 2:
-        	 // A list of lists, each consisting of the AND OR operator nodes within each condition. 
-            // Note, only multiple operator conditions are returned. 
-            nodes = getShortCircuitingOperatorNodes(sf, rng);
-        case 3:
-        	// As getShortCircuitingOperatorNodes, but returns the leaf nodes of the operators
-            nodes = getShortCircuitingLeafNodes(sf, rng);   
-        case 4:
-        	// As getShortCircuitingLeafNodes, but returns leaf nodes of matching operators
-        	nodes = getShortCircuitingRelevantLeafNodes(sf, rng);
-        case 5:
-        	// As getShortCircuitingLeafNodes, but returns OR operators instead of its leaves
-        	nodes = getShortCircuitingLeafNodesPreserveOR(sf, rng);   
+	        case 1:
+	        	// A list of all AND OR operator nodes
+	            nodes = getOperatorNodes(sf, rng); 
+	            System.out.println(nodes);
+	            tree_exp.getDetailsOfSelectedNode(sf);
+	            break;
+	        case 2:
+	        	 // A list of lists, each consisting of the AND OR operator nodes within each condition. 
+	            // Note, only multiple operator conditions are returned. 
+	        	nodes = getShortCircuitingNodes(sf, rng, "nodes");
+	        	System.out.println(nodes);
+	            tree_exp.getDetailsOfSelectedNode(sf);
+	            break;
+	        case 3:
+	        	// As getShortCircuitingOperatorNodes, but returns the leaf nodes of the operators
+	            // note: returns all children of operators, even if it's another operator
+	        	nodes = getShortCircuitingNodes(sf, rng, "leaves");
+	        	System.out.println(nodes);
+	            tree_exp.getDetailsOfSelectedNode(sf);
+	            break;
+	        case 4:
+	        	// As getShortCircuitingLeafNodes, but returns leaf nodes of matching operators
+	        	nodes = getShortCircuitingNodes(sf, rng, "andleaves");
+	        	System.out.println(nodes);
+	            tree_exp.getDetailsOfSelectedNode(sf);
+	            break;
+	        case 5:
+	        	// As getShortCircuitingLeafNodes, but returns OR operators instead of its leaves
+	        	nodes = getShortCircuitingNodes(sf, rng, "matchingleaves");
+	        	System.out.println(nodes);
+	            tree_exp.getDetailsOfSelectedNode(sf);
+	        	break;
         }           
         
         if (nodes.isEmpty()) {
@@ -63,6 +83,7 @@ public class ReorderLogicalExpression extends ModifyNodeEdit {
         this.targetNode = nodes.get(rng.nextInt(nodes.size()));
     }
     
+    // Case 1
     public List<Integer> getOperatorNodes(SourceFileTree sf, Random rng){    
     	// get the static list of nodes that might be applicable (the BinaryStatements)
         // then look for the ones that have AND OR operators 
@@ -73,15 +94,15 @@ public class ReorderLogicalExpression extends ModifyNodeEdit {
             if ((n.getOperator() == Operator.AND) || (n.getOperator() == Operator.OR)) {
                 nodes.add(i);
             }
-        }
-        
+        }        
         return nodes;   	
     }
-   	////////////////////////////////////////////////////////////////////////////////////////////////////
-	public List<Integer> getShortCircuitingOperatorNodes(SourceFileTree sf, Random rng){    
-
-		System.out.println("Short Circuiting ########################################################"); 
-		List<List<Integer>>  short_circuit_indexes = sf.getShortCircuitingNodeIDs();   
+   	// Case 2/3/4/5
+	public List<Integer> getShortCircuitingNodes(SourceFileTree sf, Random rng, String node_type){    
+				
+		System.out.println("getShortCircuitingNodes ########################################################"); 
+		List<List<Integer>>  short_circuit_indexes = sf.getShortCircuitingIDs(node_type); 
+		
 		// Choose condition
 		List<Integer> condition_nodes = short_circuit_indexes.get(rng.nextInt(short_circuit_indexes.size()));
 		
@@ -92,57 +113,15 @@ public class ReorderLogicalExpression extends ModifyNodeEdit {
 		}	 
 		
 		return condition_nodes;
-	}    
-	////////////////////////////////////////////////////////////////////////////////////
-	public List<Integer> getShortCircuitingLeafNodes(SourceFileTree sf, Random rng) {
-		System.out.println("Start Leaves ########################################################"); 
-		List<List<Integer>>  short_circuit_leaf_indexes = sf.getShortCircuitingLeafIDs(); 		
-		//Choose condition
-		List<Integer> leaf_nodes = short_circuit_leaf_indexes.get(rng.nextInt(short_circuit_leaf_indexes.size()));		
-		// Print details (unnecessary)
-		System.out.println("All leaves of Condition: " + short_circuit_leaf_indexes + " - Selected: " + leaf_nodes);  	
-		for (Integer this_op : leaf_nodes) {
-			System.out.println(sf.getNode(this_op).toString());
-		}
-		System.out.println("End Leaves ########################################################");
-		
-		return leaf_nodes;    	
-	}
-	////////////////////////////////////////////////////////////////////////////////////
-	public List<Integer> getShortCircuitingRelevantLeafNodes(SourceFileTree sf, Random rng) {
-	
-		System.out.println("Start Smart Leaves ########################################################"); 
-		List<List<Integer>>  short_circuit_smart_leaf_indexes = sf.getShortCircuitingLeafIDsByType(); 
-		
-		//Choose condition
-		List<Integer> leaf_nodes = short_circuit_smart_leaf_indexes.get(rng.nextInt(short_circuit_smart_leaf_indexes.size()));
-		
-		// Printing (unnecessary)
-		System.out.println("All leaf nodes of Condition: " + short_circuit_smart_leaf_indexes + " Selected: " + leaf_nodes);  
-		for (Integer this_op : leaf_nodes) {
-			System.out.println(sf.getNode(this_op).toString());
-		}
-		System.out.println("End Leaves ########################################################");
-		
-		return leaf_nodes;
-	} 
-	////////////////////////////////////////////////////////////////////////////////////	
-	public List<Integer> getShortCircuitingLeafNodesPreserveOR(SourceFileTree sf, Random rng) {
-		System.out.println("Start Leaves ########################################################"); 
-		List<List<Integer>>  short_circuit_leaf_indexes = sf.getShortCircuitingLeafIDsPreserveOR(); 		
-		//Choose condition
-		List<Integer> leaf_nodes = short_circuit_leaf_indexes.get(rng.nextInt(short_circuit_leaf_indexes.size()));		
-		// Print details (unnecessary)
-		System.out.println("All leaves of Condition: " + short_circuit_leaf_indexes + " - Selected: " + leaf_nodes);  	
-		for (Integer this_op : leaf_nodes) {
-			System.out.println(sf.getNode(this_op).toString());
-		}
-		System.out.println("End Leaves ########################################################");
-		
-		return leaf_nodes;    	
-	}
+	}        	
+
 	////////////////////////////////////////////////////////////////////////////////////
     
+	
+	
+	
+	
+	
     @Override
     public SourceFile apply(SourceFile sourceFile) {
         SourceFileTree sf = (SourceFileTree)sourceFile;
